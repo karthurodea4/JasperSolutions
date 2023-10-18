@@ -1,0 +1,592 @@
+//This is the menu in Google Sheets. If changes are made here, run onOpen and then reload the sheet.
+function onOpen() {
+  var ui = SpreadsheetApp.getUi();
+  ui.createMenu('API Calls')
+      .addItem('1. Write Product Descriptions','runCommand')
+      .addItem('2. Write Description Analysis', 'runAnalysis')
+      .addItem('3. Run Keyword Research', 'runKeyword')
+      .addItem('4. Run Product Description Template', 'runprodTemplate')
+      .addItem('5. Run Analysis Template', 'runanalysisTemplate')
+      .addItem('6. Run Feature Selector', 'runfeatureTemplate')
+      .addItem('7. Run Product Description Template w/ Feature Selection', 'runprodfeatureTemplate')
+      .addItem('8. Run Analysis Template w/ Feature Selection', 'runanalysisfeatureTemplate')
+      .addItem('9. Run v5 Prod Description Template', 'runV5Template')
+      .addItem('10. Run v5 Prod Description Template Batch', 'runV5TemplateBatch')
+      .addSeparator()
+      .addItem('Set API Token', 'setApiToken')
+      .addToUi();
+}
+
+//This function opens up a menu to insert your API token if you don't already have one set. Once entered and you hit "ok", the token gets saved as a script property. 
+function setApiToken() {
+  var token = Browser.inputBox("Enter your API token:");
+  if (token === "cancel") {
+    Browser.msgBox('API token not saved - you cancelled the input.');
+    return;
+  }
+  PropertiesService.getScriptProperties().setProperty('mykey', token);
+  Browser.msgBox('API token saved.');
+}
+
+// v5 Product Description Template
+function runV5Template() {
+  var sheet = SpreadsheetApp.getActiveSheet();
+  var startRow = 3; // Skip the first two rows which includes headers and process the second row
+  var numRows = sheet.getLastRow()-1; // Number of rows to process
+  var property = PropertiesService.getScriptProperties().getProperty('mykey'); 
+  // Navigate to Project Settings in Apps Script to define the key value above securely for this script
+  var apiKey = property; 
+
+  // Define the headers to include in the request
+  var headers = {
+    accept: 'application/json',
+    'content-type': 'application/json',
+    'x-api-key': apiKey
+  };
+
+  // Fetch the range of cells A2:B[numRows+1] containing the context and command values.
+  var contextCommandRange = sheet.getRange(startRow, 1, numRows, 6);
+  var contextCommands = contextCommandRange.getValues(); // Array of arrays with context and command.
+
+
+  // //Loop through each context and command and make an API call
+  var requestArr = [];
+  var delayMilliseconds = 2000;
+  for (var i = 0; i < contextCommands.length; i++) {
+    var category = contextCommands[i][0];
+    var features = contextCommands[i][1];
+    var highlights = contextCommands[i][3];
+    var supplierCopy = contextCommands[i][4];
+    var avoid = contextCommands[i][5];
+    var url = "https://api.jasper.ai/v1/templates/skl_0770C86EB5074012AFA98B84720AAEDE/run";
+    var payload = {
+      "inputs": {
+        "productType": category,
+        "productDetails": features,
+        "highlightedFeatures": highlights,
+        "supplierCopy": supplierCopy,
+        "wordsToAvoid": avoid
+      },
+      "options": {
+        "outputCount": 1
+      }
+    };
+    var options = {
+      'headers': headers,
+      'method': 'post',
+      'muteHttpExceptions': true,
+      'payload': JSON.stringify(payload)
+    };
+    requestArr.push({ url, ...options })
+
+    if (i < contextCommands.length - 1) {
+      Utilities.sleep(delayMilliseconds);
+    }    
+  }
+
+  var responseArr = UrlFetchApp.fetchAll(requestArr);
+  responseArr.forEach((response, i) => {
+    var json = response.getContentText();
+    try {
+      var data = JSON.parse(json);
+      if (data && Array.isArray(data.data) && data.data.length > 0) {
+        var textCell = sheet.getRange(startRow + i, 8);
+        textCell.setValue(data.data[0].text); 
+      } else {
+        console.log(json)
+      }
+    } catch (e) {
+      console.error("Error parsing JSON:", e);
+    }
+  })
+}
+
+
+// Wayfair Product Description Template
+function runprodTemplate() {
+  var sheet = SpreadsheetApp.getActiveSheet();
+  var startRow = 3; // Skip the first two rows which includes headers and process the second row
+  var numRows = sheet.getLastRow()-1; // Number of rows to process
+  var property = PropertiesService.getScriptProperties().getProperty('mykey'); 
+  // Navigate to Project Settings in Apps Script to define the key value above securely for this script
+  var apiKey = property; 
+
+  // Define the headers to include in the request
+  var headers = {
+    accept: 'application/json',
+    'content-type': 'application/json',
+    'x-api-key': apiKey
+  };
+
+  // Fetch the range of cells A2:B[numRows+1] containing the context and command values.
+  var contextCommandRange = sheet.getRange(startRow, 1, numRows, 2);
+  var contextCommands = contextCommandRange.getValues(); // Array of arrays with context and command.
+
+  //Loop through each context and command and make an API call
+  var requestArr = [];
+  for (var i = 0; i < contextCommands.length; i++) {
+    var category = contextCommands[i][0];
+    var features = contextCommands[i][1];
+    var url = "https://api.jasper.ai/v1/templates/skl_21CB0623360A4D04801F97B97153EA2D/run";
+    var payload = {
+      "inputs": {
+        "productCategory": category,
+        "productFeatures": features
+      },
+      "options": {
+        "outputCount": 1
+      }
+    };
+    var options = {
+      'headers': headers,
+      'method': 'post',
+      'muteHttpExceptions': true,
+      'payload': JSON.stringify(payload)
+    };
+    requestArr.push({ url, ...options })    
+  }
+
+  var responseArr = UrlFetchApp.fetchAll(requestArr);
+  responseArr.forEach((response, i) => {
+    var json = response.getContentText();
+    try {
+      var data = JSON.parse(json);
+      if (data && Array.isArray(data.data) && data.data.length > 0) {
+        var textCell = sheet.getRange(startRow + i, 7);
+        textCell.setValue(data.data[0].text); 
+      } else {
+        console.log(json)
+      }
+    } catch (e) {
+      console.error("Error parsing JSON:", e);
+    }
+  })
+}
+
+
+// Wayfair Product Description Template
+function runprodfeatureTemplate() {
+  var sheet = SpreadsheetApp.getActiveSheet();
+  var startRow = 3; // Skip the first two rows which includes headers and process the second row
+  var numRows = sheet.getLastRow()-1; // Number of rows to process
+  var property = PropertiesService.getScriptProperties().getProperty('mykey'); 
+  // Navigate to Project Settings in Apps Script to define the key value above securely for this script
+  var apiKey = property; 
+
+  // Define the headers to include in the request
+  var headers = {
+    accept: 'application/json',
+    'content-type': 'application/json',
+    'x-api-key': apiKey
+  };
+
+  // Fetch the range of cells A2:B[numRows+1] containing the context and command values.
+  var contextCommandRange = sheet.getRange(startRow, 3, numRows, 2);
+  var contextCommands = contextCommandRange.getValues(); // Array of arrays with context and command.
+
+  //Loop through each context and command and make an API call
+  var requestArr = [];
+  for (var i = 0; i < contextCommands.length; i++) {
+    var category = contextCommands[i][0];
+    var features = contextCommands[i][1];
+    var url = "https://api.jasper.ai/v1/templates/skl_21CB0623360A4D04801F97B97153EA2D/run";
+    var payload = {
+      "inputs": {
+        "productCategory": category,
+        "productFeatures": features
+      },
+      "options": {
+        "outputCount": 1
+      }
+    };
+    var options = {
+      'headers': headers,
+      'method': 'post',
+      'muteHttpExceptions': true,
+      'payload': JSON.stringify(payload)
+    };
+    requestArr.push({ url, ...options })    
+  }
+
+  var responseArr = UrlFetchApp.fetchAll(requestArr);
+  responseArr.forEach((response, i) => {
+    var json = response.getContentText();
+    try {
+      var data = JSON.parse(json);
+      if (data && Array.isArray(data.data) && data.data.length > 0) {
+        var textCell = sheet.getRange(startRow + i, 9);
+        textCell.setValue(data.data[0].text); 
+      } else {
+        console.log(json)
+      }
+    } catch (e) {
+      console.error("Error parsing JSON:", e);
+    }
+  })
+}
+
+// Wayfair Analysis Template
+function runanalysisTemplate() {
+  var sheet = SpreadsheetApp.getActiveSheet();
+  var startRow = 3; // Skip the first two rows which includes headers and process the second row
+  var numRows = sheet.getLastRow()-1; // Number of rows to process
+  var property = PropertiesService.getScriptProperties().getProperty('mykey'); 
+  // Navigate to Project Settings in Apps Script to define the key value above securely for this script
+  var apiKey = property; 
+
+  // Define the headers to include in the request
+  var headers = {
+    accept: 'application/json',
+    'content-type': 'application/json',
+    'x-api-key': apiKey
+  };
+
+  // Fetch the range of cells A2:B[numRows+1] containing the context and command values.
+  var contextCommandRange = sheet.getRange(startRow, 14, numRows, 2);
+  var contextCommands = contextCommandRange.getValues(); // Array of arrays with context and command.
+
+  //Loop through each context and command and make an API call
+  var requestArr = [];
+  for (var i = 0; i < contextCommands.length; i++) {
+    var description = contextCommands[i][0];
+    var features = contextCommands[i][1];
+    var url = "https://api.jasper.ai/v1/templates/skl_38AC5DD2442848A59F6F7B7DA196E5E1/run";
+    var payload = {
+      "inputs": {
+        "productDescription": description,
+        "featureList": features
+      },
+      "options": {
+        "outputCount": 1
+      }
+    };
+    var options = {
+      'headers': headers,
+      'method': 'post',
+      'muteHttpExceptions': true,
+      'payload': JSON.stringify(payload)
+    };
+    requestArr.push({ url, ...options })    
+  }
+
+  var responseArr = UrlFetchApp.fetchAll(requestArr);
+  responseArr.forEach((response, i) => {
+    var json = response.getContentText();
+    try {
+      var data = JSON.parse(json);
+      if (data && Array.isArray(data.data) && data.data.length > 0) {
+        var textCell = sheet.getRange(startRow + i, 17);
+        textCell.setValue(data.data[0].text); 
+      } else {
+        console.log(json)
+      }
+    } catch (e) {
+      console.error("Error parsing JSON:", e);
+    }
+  })
+}
+
+
+// Wayfair Analysis Template
+function runanalysisfeatureTemplate() {
+  var sheet = SpreadsheetApp.getActiveSheet();
+  var startRow = 3; // Skip the first two rows which includes headers and process the second row
+  var numRows = sheet.getLastRow()-1; // Number of rows to process
+  var property = PropertiesService.getScriptProperties().getProperty('mykey'); 
+  // Navigate to Project Settings in Apps Script to define the key value above securely for this script
+  var apiKey = property; 
+
+  // Define the headers to include in the request
+  var headers = {
+    accept: 'application/json',
+    'content-type': 'application/json',
+    'x-api-key': apiKey
+  };
+
+  // Fetch the range of cells A2:B[numRows+1] containing the context and command values.
+  var contextCommandRange = sheet.getRange(startRow, 16, numRows, 2);
+  var contextCommands = contextCommandRange.getValues(); // Array of arrays with context and command.
+
+  //Loop through each context and command and make an API call
+  var requestArr = [];
+  for (var i = 0; i < contextCommands.length; i++) {
+    var description = contextCommands[i][0];
+    var features = contextCommands[i][1];
+    var url = "https://api.jasper.ai/v1/templates/skl_38AC5DD2442848A59F6F7B7DA196E5E1/run";
+    var payload = {
+      "inputs": {
+        "productDescription": description,
+        "featureList": features
+      },
+      "options": {
+        "outputCount": 1
+      }
+    };
+    var options = {
+      'headers': headers,
+      'method': 'post',
+      'muteHttpExceptions': true,
+      'payload': JSON.stringify(payload)
+    };
+    requestArr.push({ url, ...options })    
+  }
+
+  var responseArr = UrlFetchApp.fetchAll(requestArr);
+  responseArr.forEach((response, i) => {
+    var json = response.getContentText();
+    try {
+      var data = JSON.parse(json);
+      if (data && Array.isArray(data.data) && data.data.length > 0) {
+        var textCell = sheet.getRange(startRow + i, 19);
+        textCell.setValue(data.data[0].text); 
+      } else {
+        console.log(json)
+      }
+    } catch (e) {
+      console.error("Error parsing JSON:", e);
+    }
+  })
+}
+
+
+// COMMANDS TEMPLATE
+function runCommand() {
+  var sheet = SpreadsheetApp.getActiveSheet();
+  var startRow = 3; // Skip the first two rows which includes headers and process the second row
+  var numRows = sheet.getLastRow()-1; // Number of rows to process
+  var property = PropertiesService.getScriptProperties().getProperty('mykey'); 
+  // Navigate to Project Settings in Apps Script to define the key value above securely for this script
+  var apiKey = property; 
+
+  // Define the headers to include in the request
+  var headers = {
+    accept: 'application/json',
+    'content-type': 'application/json',
+    'x-api-key': apiKey
+  };
+
+  // Fetch the range of cells containing the context and command values.
+  var contextCommandRange = sheet.getRange(startRow, 6, numRows, 1);
+  var contextCommands = contextCommandRange.getValues(); // Array of concatenated product details to pass to Jasper
+
+  //Loop through each context and command and make an API call
+  var requestArr = [];
+  for (var i = 0; i < contextCommands.length; i++) {
+    var context = contextCommands[i][0];
+    var url = "https://api.jasper.ai/v1/templates/skl_21CB0623360A4D04801F97B97153EA2D/run";
+    var payload = {
+      "inputs": {
+        "productInformation": context
+      },
+      "options": {
+        "outputCount": 1
+      }
+    };
+    var options = {
+      'headers': headers,
+      'method': 'post',
+      'muteHttpExceptions': true,
+      'payload': JSON.stringify(payload)
+    };
+    requestArr.push({ url, ...options })
+  }
+  var responseArr = UrlFetchApp.fetchAll(requestArr);
+  responseArr.forEach((response, i) => {
+    var json = response.getContentText();
+    try {
+      var data = JSON.parse(json);
+      if (data && Array.isArray(data.data) && data.data.length > 0) {
+        var textCell = sheet.getRange(startRow + i, 8);
+        textCell.setValue(data.data[0].text); 
+      } else {
+        console.log(json)
+      }
+    } catch (e) {
+      console.error("Error parsing JSON:", e);
+    }
+  })
+}
+
+
+
+function runAnalysis() {
+  var sheet = SpreadsheetApp.getActiveSheet();
+  var startRow = 3; // Skip the first two rows which includes headers and process the second row
+  var numRows = sheet.getLastRow()-1; // Number of rows to process
+  var property = PropertiesService.getScriptProperties().getProperty('mykey'); 
+  // Navigate to Project Settings in Apps Script to define the key value above securely for this script
+  var apiKey = property; 
+
+  // Define the headers to include in the request
+  var headers = {
+    accept: 'application/json',
+    'content-type': 'application/json',
+    'x-api-key': apiKey
+  };
+
+  // Fetch the range of cells A2:B[numRows+1] containing the context and command values.
+  var contextCommandRange = sheet.getRange(startRow, 15, numRows, 2);
+  var contextCommands = contextCommandRange.getValues(); // Array of arrays with context and command.
+
+  //Loop through each context and command and make an API call
+  var requestArr = [];
+  for (var i = 0; i < contextCommands.length; i++) {
+    var context = contextCommands[i][1];
+    var command = contextCommands[i][0];
+    var url = "https://api.jasper.ai/v1/command";
+    var payload = {
+      "inputs": {
+        "command": command,
+        "context": context
+      },
+      "options": {
+        "outputCount": 1,
+        "completionType": "quality"
+      }
+    };
+    var options = {
+      'headers': headers,
+      'method': 'post',
+      'muteHttpExceptions': true,
+      'payload': JSON.stringify(payload)
+    };
+    requestArr.push({ url, ...options })
+  }
+  
+  var responseArr = UrlFetchApp.fetchAll(requestArr);
+  responseArr.forEach((response, i) => {
+    var json = response.getContentText();
+    try {
+      var data = JSON.parse(json);
+      if (data && Array.isArray(data.data) && data.data.length > 0) {
+        var textCell = sheet.getRange(startRow + i, 17);
+        textCell.setValue(data.data[0].text); 
+      } else {
+        console.log(json)
+      }
+    } catch (e) {
+      console.error("Error parsing JSON:", e);
+    }
+  })
+}
+
+// Keywords Generator
+function runKeyword() {
+  var sheet = SpreadsheetApp.getActiveSheet();
+  var startRow = 3; // Skip the first two rows which includes headers and process the second row
+  var numRows = sheet.getLastRow()-1; // Number of rows to process
+  var property = PropertiesService.getScriptProperties().getProperty('mykey'); 
+  // Navigate to Project Settings in Apps Script to define the key value above securely for this script
+  var apiKey = property; 
+
+  // Define the headers to include in the request
+  var headers = {
+    accept: 'application/json',
+    'content-type': 'application/json',
+    'x-api-key': apiKey
+  };
+
+  // Fetch the range of cells A2:B[numRows+1] containing the context and command values.
+  var contextCommandRange = sheet.getRange(startRow, 1, numRows, 1);
+  var contextCommands = contextCommandRange.getValues(); // Array of arrays with context and command.
+
+  //Loop through each context and command and make an API call
+  var requestArr = [];
+  for (var i = 0; i < contextCommands.length; i++) {
+    var context = contextCommands[i][0];
+    var url = "https://api.jasper.ai/v1/templates/skl_1CAFE51E9C1A4251BAD50DD0C9AE6FDA/run";
+    var payload = {
+      "inputs": {
+        "productCategory": context
+      },
+      "options": {
+        "outputCount": 1
+      }
+    };
+    var options = {
+      'headers': headers,
+      'method': 'post',
+      'muteHttpExceptions': true,
+      'payload': JSON.stringify(payload)
+    };
+    requestArr.push({ url, ...options })    
+  }
+
+  var responseArr = UrlFetchApp.fetchAll(requestArr);
+  responseArr.forEach((response, i) => {
+    var json = response.getContentText();
+    try {
+      var data = JSON.parse(json);
+      if (data && Array.isArray(data.data) && data.data.length > 0) {
+        var textCell = sheet.getRange(startRow + i, 3);
+        textCell.setValue(data.data[0].text); 
+      } else {
+        console.log(json)
+      }
+    } catch (e) {
+      console.error("Error parsing JSON:", e);
+    }
+  })
+}
+
+
+// Wayfair Feature Analysis Template
+function runfeatureTemplate() {
+  var sheet = SpreadsheetApp.getActiveSheet();
+  var startRow = 3; // Skip the first two rows which includes headers and process the second row
+  var numRows = sheet.getLastRow()-1; // Number of rows to process
+  var property = PropertiesService.getScriptProperties().getProperty('mykey'); 
+  // Navigate to Project Settings in Apps Script to define the key value above securely for this script
+  var apiKey = property; 
+
+  // Define the headers to include in the request
+  var headers = {
+    accept: 'application/json',
+    'content-type': 'application/json',
+    'x-api-key': apiKey
+  };
+
+  // Fetch the range of cells A2:B[numRows+1] containing the context and command values.
+  var contextCommandRange = sheet.getRange(startRow, 1, numRows, 2);
+  var contextCommands = contextCommandRange.getValues(); // Array of arrays with context and command.
+
+  //Loop through each context and command and make an API call
+  var requestArr = [];
+  for (var i = 0; i < contextCommands.length; i++) {
+    var category = contextCommands[i][0];
+    var features = contextCommands[i][1];
+    var url = "https://api.jasper.ai/v1/templates/skl_564CE1724A194A81B483E2019C809CDE/run";
+    var payload = {
+      "inputs": {
+        "productCategory": category,
+        "productFeatures": features
+      },
+      "options": {
+        "outputCount": 1
+      }
+    };
+    var options = {
+      'headers': headers,
+      'method': 'post',
+      'muteHttpExceptions': true,
+      'payload': JSON.stringify(payload)
+    };
+    requestArr.push({ url, ...options })    
+  }
+
+  var responseArr = UrlFetchApp.fetchAll(requestArr);
+  responseArr.forEach((response, i) => {
+    var json = response.getContentText();
+    try {
+      var data = JSON.parse(json);
+      if (data && Array.isArray(data.data) && data.data.length > 0) {
+        var textCell = sheet.getRange(startRow + i, 4);
+        textCell.setValue(data.data[0].text); 
+      } else {
+        console.log(json)
+      }
+    } catch (e) {
+      console.error("Error parsing JSON:", e);
+    }
+  })
+}
