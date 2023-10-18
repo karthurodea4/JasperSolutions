@@ -1,0 +1,153 @@
+
+--------------------------------------
+//     GPT OPTIONS    ///
+--------------------------------------
+{
+  "model": "gpt-4",
+  "temperature": 0.4
+}
+--------------------------------------
+//     FRONT END OPTIONS    ///
+--------------------------------------
+{
+  "defaultOutputCount": 1
+}
+
+--------------------------------------
+//     SCRIPT TEMPLATE    ///
+--------------------------------------
+[
+    {
+      "role": "system",
+      "content": "Act as a marketer. Write a compelling headline, short copy, and long copy that describe the product. Begin by including a label for each section, such as \"Headline\" \"Short Copy\" and \"Long Copy.\"  Use the information provided in the {topic} and {technicalDetails} to craft an engaging headline that grabs the audience's attention, and a brief, impactful short copy within 15 words that describes the [topic]. The long copy, between 30-45 words, should provide more detail about the product's unique features and benefits from the {technicalDetails}. Always ensure to focus on the unique {tone}. Ensure to highlight key features based on the appropriate audience that might purchase this product.\nRule: Do not output additional sections beyond the Headline, Short Copy, and Long Copy.\nAvoid unnatural transition words like Furthermore."
+    },
+    {
+      "role": "user",
+      "content": "Topic:Thermal,Technical Details:-Legion Coldfront 4.0 thermal system with Vapor Chamber Technology -Supports over 175W of thermal capacity, an engineering marvel -Stealth Fan system for reduced system noise -Improved rear exhaust vents by x% for improved airflow with an additional x% larger intake area under the device for optimal cooling of key components -over X individually drilled intake holes located on the left and right of the power button for improved airflow -Lenovo Smart Power, allowing for effortless fan control by pressing the Fn + Q keys,Additional Info:"
+    },
+    {
+      "role": "assistant",
+      "content": "Headline: Next Gen Cooling. Next Level Framerates.\n\nShort Copy (<15 words): True cooling comes Legion Coldfront 4.0 thermal systems and Vapor Chamber technology, with support for over 175W thermal capacity. The stealth fan system reduces fan noise, while extra vents improve airflow and optimize the cooling.\n\nLong Copy (30-45 words):The Legion Coldfront 4.0 thermal systems feature revolutionary Massive Vapor Chamber technology, delivering powerful cooling on a gaming laptop. It offers over 175W of graphical power, an improved thermal compound, and a more powerful fan system. It also includes Lenovo Smart Power for easy fan control."
+    },
+    {
+      "role": "user",
+      "content": "<jasper>{topic}</jasper>, <jasper>{technicalDetails}</jasper>,<jasper>{additionalInfo}</jasper>, <jasper>{tone}</jasper>",
+      "stringTemplate": [
+        {
+          "id": "topic",
+          "newlines": 2
+        },
+        {
+          "id": "technicalDetails",
+          "newlines": 2
+        },
+        {
+          "id": "additionalInfo",
+          "newlines": 2
+        },
+        {
+          "id": "tone",
+          "newlines": 2
+        }
+      ]
+    }
+]
+--------------------------------------
+//     APP INPUT SCHEMA    ///
+--------------------------------------
+[
+    {
+      "id": "productShortDescription",
+      "type": "textarea",
+      "label": "Product short description:",
+      "required": true,
+      "placeholder": "Gaia Metallic Pocket Faux Fur-Trim Snow Boots"
+    },
+    {
+      "id": "productCopy",
+      "type": "textarea",
+      "label": "Product copy:",
+      "required": true,
+      "maxLength": 1500,
+      "placeholder": "Almond toe side zip eases dress.  <ul><li>Rubber outsole lining: Leather leather method dry cleaning</li><li>Professionally clean</li><li>Imported</li><li>2.25 in / 55 mm block heel; 0.25 in / 10 mm platform</li></ul><br><b>ABOUT THE BRAND</b><br><br>In 2002, rag & bone founder Marcus Wainwright combined his British heritage with a downtown–New York aesthetic to set the tone for the label. At the heart of the edgy-yet-laid-back brand is its focus on quality craftsmanship and attention to detail. The epitome of cool, off-duty style, it’s no wonder the signature second-skin denim is favored by many."
+    }
+]
+---------------------------------------------------------------------------
+  // PROMPT BUILDING AREA - Minify when done, paste in System, content. //
+---------------------------------------------------------------------------
+[
+<INSTRUCTIONS>\n
+Act as an ...\n
+</INSTRUCTIONS>\n\n
+
+<TONE>\n
+\n
+</TONE>\n\n
+
+<HERO SECTION STRUCTURE>\n
+\n
+</HERO SECTION STRUCTURE>\n\n
+
+<FEATURES SECTION STRUCTURE>\n
+\n
+</FEATURES SECTION STRUCTUREs>\n\n
+
+<RULES>\n
+\n
+</RULES>
+
+]
+---------------------------------------
+//     USER ASSISTANT EXAMPLES     ///
+--------------------------------------
+[
+
+USER ONE
+
+ASSISTANT ONE:
+
+----
+
+USER TWO: 
+
+ASSISTANT TWO: 
+
+----
+
+USER THREE: 
+
+ASSISTANT THREE: 
+
+----
+
+USER FOUR:
+
+ASSISTANT FOUR: 
+
+----
+
+USER FIVE: 
+
+ASSISTANT FIVE: 
+
+----
+
+USER SIX 
+
+ASSISTANT SIX: 
+
+----
+
+USER SEVEN: 
+
+ASSISTANT SEVEN: 
+
+----
+
+User EIGHT: 
+
+ASSISTANT EIGHT: 
+]
+
+
+
